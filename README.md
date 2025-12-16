@@ -14,17 +14,17 @@ Architecture Diagram
 --------------------
 ```mermaid
 flowchart LR
-    subgraph Edge Agent (Go)
+    subgraph "Edge Agent (Go)"
         T[Telemetry Generator<br/>1 Hz JSON]
         B[Buffer Writer<br/>fileMutex-protected<br/>buffer.jsonl]
         F[Flush Worker<br/>rotate -> upload backlog]
     end
 
-    subgraph Network / Chaos
+    subgraph "Network / Chaos"
         C[Chaos Flag<br/>is_network_healthy?]
     end
 
-    subgraph Headquarters (FastAPI)
+    subgraph "Headquarters (FastAPI)"
         A[POST /telemetry<br/>async validation]
         S[Async SQLite<br/>aiosqlite]
         D[Dashboard (HTMX)]
