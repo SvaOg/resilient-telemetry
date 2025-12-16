@@ -39,19 +39,19 @@ async def chaos_monkey_loop():
     Background task that randomly toggles the server health status.
     """
     global is_network_healthy
-    logger.info("🐵 Chaos Monkey started internally.")
+    logger.info("Chaos Monkey started internally.")
 
     while True:
         # 1. Stay ONLINE for a random duration
         duration = random.randint(MIN_UP_TIME, MAX_UP_TIME)
         is_network_healthy = True
-        logger.info(f"✅ Network RESTORED. Online for {duration}s")
+        logger.info(f"Network RESTORED. Online for {duration}s")
         await asyncio.sleep(duration)
 
         # 2. Go OFFLINE for a random duration
         duration = random.randint(MIN_DOWN_TIME, MAX_DOWN_TIME)
         is_network_healthy = False
-        logger.warning(f"💥 Network SEVERED. Offline for {duration}s")
+        logger.warning(f"Network SEVERED. Offline for {duration}s")
         await asyncio.sleep(duration)
 
 
@@ -137,7 +137,7 @@ async def receive_telemetry(data: TelemetryData):
         await db_connection.commit()
 
     logger.info(
-        f"📥 Saved: {data.timestamp.strftime('%H:%M:%S')} | Temp: {data.temperature}"
+        f"Saved: {data.timestamp.strftime('%H:%M:%S')} | Temp: {data.temperature}"
     )
     return {"status": "saved"}
 

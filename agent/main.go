@@ -29,7 +29,7 @@ var fileMutex sync.Mutex
 
 func main() {
 	agentID := "agent-001"
-	fmt.Printf("🚀 Agent %s starting up (Linear Logic Mode)...\n", agentID)
+	fmt.Printf("Agent %s starting up (Linear Logic Mode)...\n", agentID)
 
 	go flushBufferBackground()
 
@@ -72,14 +72,14 @@ func saveToBuffer(data TelemetryData) {
 
 	f, err := os.OpenFile(bufferFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Printf("❌ Error opening buffer: %v", err)
+		log.Printf("Error opening buffer: %v", err)
 		return
 	}
 	defer f.Close()
 
 	jsonData, _ := json.Marshal(data)
 	f.Write(append(jsonData, '\n'))
-	fmt.Printf("💾 Buffered: %v\n", data.Timestamp.Format(time.TimeOnly))
+	fmt.Printf("Buffered: %v\n", data.Timestamp.Format(time.TimeOnly))
 }
 
 // ---------------- BACKGROUND WORKER ----------------
@@ -102,10 +102,10 @@ func processBuffer() {
 		if uploadBacklogFile(processingFile) {
 			// Success! Remove the file.
 			os.Remove(processingFile)
-			fmt.Println("✅ Backlog batch cleared.")
+			fmt.Println("Backlog batch cleared.")
 		} else {
 			// Failed. Return and try again next tick.
-			fmt.Println("⚠️ Connection unstable. Retrying batch later.")
+			fmt.Println("Connection unstable. Retrying batch later.")
 			return
 		}
 	}
@@ -119,7 +119,7 @@ func processBuffer() {
 	if info, err := os.Stat(bufferFile); err == nil && info.Size() > 0 {
 		// Atomic Rename: buffer.jsonl -> buffer_processing.jsonl
 		os.Rename(bufferFile, processingFile)
-		fmt.Println("🔄 Rotating log file for processing...")
+		fmt.Println("Rotating log file for processing...")
 	}
 }
 
@@ -144,7 +144,7 @@ func uploadBacklogFile(filepath string) bool {
 			if !sendTelemetry(data) {
 				return false
 			}
-			fmt.Printf("   ⬆️ Restored upload: %v\n", data.Timestamp.Format(time.TimeOnly))
+			fmt.Printf("   Restored upload: %v\n", data.Timestamp.Format(time.TimeOnly))
 		}
 	}
 	return true

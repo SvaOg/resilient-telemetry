@@ -15,7 +15,7 @@ MAX_DOWN_TIME = 8
 
 def start_server():
     """Starts the Uvicorn server as a subprocess."""
-    print(f"🔥 [CHAOS] Bringing HQ Online...")
+    print(f"[CHAOS] Bringing HQ Online...")
     # process_group=True allows us to kill the whole tree (uv + uvicorn)
     if sys.platform == "win32":
         return subprocess.Popen(
@@ -27,7 +27,7 @@ def start_server():
 
 def stop_server(proc):
     """Kills the server subprocess."""
-    print(f"💥 [CHAOS] Killing HQ! (Simulating Network Failure)")
+    print(f"[CHAOS] Killing HQ! (Simulating Network Failure)")
     if sys.platform == "win32":
         proc.send_signal(signal.CTRL_BREAK_EVENT)
         proc.kill()
@@ -38,7 +38,7 @@ def stop_server(proc):
 
 
 def main():
-    print("🐵 Chaos Monkey initialized. Controlling HQ server...")
+    print("Chaos Monkey initialized. Controlling HQ server...")
 
     server_process = None
 
@@ -57,11 +57,11 @@ def main():
 
             # 4. Wait for random time (downtime)
             duration = random.randint(MIN_DOWN_TIME, MAX_DOWN_TIME)
-            print(f"zzz [CHAOS] Network down for {duration}s...")
+            print(f"[CHAOS] Network down for {duration}s...")
             time.sleep(duration)
 
     except KeyboardInterrupt:
-        print("\n🛑 Stopping Chaos Monkey...")
+        print("\nStopping Chaos Monkey...")
         if server_process:
             stop_server(server_process)
 
