@@ -59,3 +59,5 @@ agent/buffer*.jsonl
 hq/telemetry.db
 
 hq/data/
+
+agent_prompts.txt
