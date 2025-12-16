@@ -13,11 +13,29 @@ Key Features
 Architecture Diagram
 --------------------
 ```mermaid
-graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
+flowchart LR
+    subgraph Edge_Agent_Go
+        T["Telemetry Generator<br/>1 Hz JSON"]
+        B["Buffer Writer<br/>fileMutex-protected<br/>buffer.jsonl"]
+        F["Flush Worker<br/>rotate and upload backlog"]
+    end
+
+    subgraph Network_Chaos
+        C["Chaos Flag<br/>is_network_healthy?"]
+    end
+
+    subgraph Headquarters_FastAPI
+        A["POST /telemetry<br/>async validation"]
+        S["Async SQLite<br/>aiosqlite"]
+        D["Dashboard<br/>(HTMX)"]
+    end
+
+    T -->|POST| A
+    A --> S
+    B -->|on failure| B
+    B -->|on recovery| F --> A
+    C -.->|toggles 503| A
+    S --> D
 ```
 
 Chaos Mode (How to See the Breaks)
