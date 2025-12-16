@@ -1,0 +1,26 @@
+stat_fragment.html<div class="stat-row">
+    <span class="label">Total Packets Received:</span>
+    <span class="value">{{ count }}</span>
+</div>
+
+{% if latest %}
+<div class="stat-row">
+    <span class="label">Last Signal Time:</span>
+    <span class="value">{{ latest.timestamp[:19] }}</span>
+</div>
+<div class="stat-row">
+    <span class="label">Temperature:</span>
+    <span class="value" style="color: {% if latest.temperature > 50 %}red{% else %}#4CAF50{% endif %}">
+        {{ latest.temperature }}°C
+    </span>
+</div>
+<div class="stat-row">
+    <span class="label">Battery:</span>
+    <span class="value">{{ latest.battery_level }}%</span>
+</div>
+<div style="text-align: center; margin-top: 20px; font-size: 0.8rem; color: #888;">
+    Status: <span style="color: #4CAF50">● ONLINE</span>
+</div>
+{% else %}
+<div style="text-align: center; color: yellow;">Waiting for first contact...</div>
+{% endif %}
