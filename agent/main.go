@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
+// ... (TelemetryData struct and consts remain the same) ...
 type TelemetryData struct {
 	AgentID      string    `json:"agent_id"`
 	Timestamp    time.Time `json:"timestamp"`
@@ -18,79 +20,132 @@ type TelemetryData struct {
 }
 
 const (
-	serverURL  = "http://localhost:8000/telemetry"
-	bufferFile = "buffer.jsonl" // .jsonl denotes "JSON Lines"
+	serverURL      = "http://localhost:8000/telemetry"
+	bufferFile     = "buffer.jsonl"
+	processingFile = "buffer_processing.jsonl"
 )
+
+var fileMutex sync.Mutex
 
 func main() {
 	agentID := "agent-001"
+	fmt.Printf("🚀 Agent %s starting up (Linear Logic Mode)...\n", agentID)
 
-	fmt.Printf("🚀 Agent %s starting up...\n", agentID)
+	go flushBufferBackground()
 
-	// 2. The Loop: Send data every 1 second
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		// Create dummy data
 		data := TelemetryData{
 			AgentID:      agentID,
 			Timestamp:    time.Now(),
-			Temperature:  23.5, // Static for now
-			BatteryLevel: 85,   // Static for now
+			Temperature:  23.5,
+			BatteryLevel: 85,
 		}
 
-		// Try to send to network
-		success := sendTelemetry(serverURL, data)
-		if !success {
+		if !sendTelemetry(data) {
 			saveToBuffer(data)
 		}
 	}
 }
 
-func sendTelemetry(url string, data TelemetryData) bool {
-	// Marshal struct to JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		log.Printf("❌ Error marshalling JSON: %v", err)
-		return false
-	}
+// ---------------- NETWORK HELPERS ----------------
 
-	// Create POST request
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+func sendTelemetry(data TelemetryData) bool {
+	jsonData, _ := json.Marshal(data)
+	client := http.Client{Timeout: 2 * time.Second}
+
+	resp, err := client.Post(serverURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("❌ Connection failed: %v", err)
 		return false
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		fmt.Printf("✅ Data sent successfully: %v\n", resp.Status)
-	} else {
-		log.Printf("⚠️ Server returned status: %s", resp.Status)
-		return false
-	}
-
-	return true
+	return resp.StatusCode == http.StatusOK
 }
 
+// ---------------- FILE HELPERS ----------------
+
 func saveToBuffer(data TelemetryData) {
-	// Open file in Append mode, Create if not exists, Write Only
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
 	f, err := os.OpenFile(bufferFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Printf("❌ CRITICAL: Cannot open buffer file: %v", err)
+		log.Printf("❌ Error opening buffer: %v", err)
 		return
 	}
 	defer f.Close()
 
-	// Marshal to JSON
 	jsonData, _ := json.Marshal(data)
+	f.Write(append(jsonData, '\n'))
+	fmt.Printf("💾 Buffered: %v\n", data.Timestamp.Format(time.TimeOnly))
+}
 
-	// Write the JSON + a newline character
-	if _, err := f.Write(append(jsonData, '\n')); err != nil {
-		log.Printf("❌ CRITICAL: Cannot write to buffer: %v", err)
-		return
+// ---------------- BACKGROUND WORKER ----------------
+
+func flushBufferBackground() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		processBuffer()
+	}
+}
+
+// The Simplified Logic
+func processBuffer() {
+	// STEP 1: Handle existing processing file (Finish what we started)
+	// We do NOT need the lock here because Main Loop only touches bufferFile.
+	if _, err := os.Stat(processingFile); err == nil {
+		// File exists, try to upload content
+		if uploadBacklogFile(processingFile) {
+			// Success! Remove the file.
+			os.Remove(processingFile)
+			fmt.Println("✅ Backlog batch cleared.")
+		} else {
+			// Failed. Return and try again next tick.
+			fmt.Println("⚠️ Connection unstable. Retrying batch later.")
+			return
+		}
 	}
 
-	fmt.Printf("💾 Buffered to disk %v\n", data.Timestamp.Format(time.TimeOnly))
+	// STEP 2: Rotate new data (Grab new work)
+	// We need the lock here because we are moving bufferFile.
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
+	// Check if main buffer exists and has data
+	if info, err := os.Stat(bufferFile); err == nil && info.Size() > 0 {
+		// Atomic Rename: buffer.jsonl -> buffer_processing.jsonl
+		os.Rename(bufferFile, processingFile)
+		fmt.Println("🔄 Rotating log file for processing...")
+	}
+}
+
+// Helper to read a file and upload line-by-line
+func uploadBacklogFile(filepath string) bool {
+	content, err := os.ReadFile(filepath)
+	if err != nil {
+		return false // Can't read file? Treat as failure.
+	}
+
+	lines := bytes.Split(content, []byte("\n"))
+
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+
+		var data TelemetryData
+		if err := json.Unmarshal(line, &data); err == nil {
+			// If we fail to send even ONE line, we abort the whole batch.
+			// This ensures strict ordering and no data gaps.
+			if !sendTelemetry(data) {
+				return false
+			}
+			fmt.Printf("   ⬆️ Restored upload: %v\n", data.Timestamp.Format(time.TimeOnly))
+		}
+	}
+	return true
 }
