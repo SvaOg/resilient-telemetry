@@ -1,0 +1,59 @@
+# --- General / OS ---
+.DS_Store
+Thumbs.db
+*.log
+tmp/
+temp/
+
+# --- VS Code ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# --- Python (HQ) ---
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments (uv creates .venv by default)
+.venv/
+env/
+venv/
+ENV/
+
+# Environment Variables (Secrets)
+.env
+.env.local
+
+# Distribution / Packaging
+dist/
+build/
+*.egg-info/
+
+# Pytest
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# --- Go (Agent) ---
+# Binaries (names you might use for your agent)
+/agent/agent
+/agent/telemetry-agent
+/agent/main
+*.exe
+*.test
+*.out
+
+# Vendor directory (optional: uncomment if you don't want to commit dependencies)
+# vendor/
+
+# --- Project Specific Data ---
+# We will likely create these later for the project
+agent/buffer.json
+hq/data/
