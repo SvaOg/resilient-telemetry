@@ -56,4 +56,6 @@ htmlcov/
 # --- Project Specific Data ---
 # We will likely create these later for the project
 agent/buffer*.jsonl
+hq/telemetry.db
+
 hq/data/
